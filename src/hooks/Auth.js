@@ -8,7 +8,8 @@ const AuthContext = createContext();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const BACKEND_URL =
-  "https://crowded-fishsticks-pwjgjx97p9j27v6-3000.app.github.dev/api";
+  "https://lonely-cobweb-4jq7r5797wwrcq5wr-3000.app.github.dev/api";
+
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState({
@@ -28,7 +29,7 @@ export function AuthProvider({ children }) {
           "Content-Type": "application/json",
           // 'User-Agent' só se precisar — no React Native geralmente não é necessário
         },
-        body: JSON.stringify({ usuario: email, senha: password }),
+       body: JSON.stringify({ usuario: email, senha: password })
       });
 
       //   console.log("Response status:", res.status, " ", res.ok);

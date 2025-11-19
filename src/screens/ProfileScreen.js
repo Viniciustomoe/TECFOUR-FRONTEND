@@ -3,11 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-na
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../hooks/Auth';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen() {
   const [image, setImage] = useState(null);
+  const { user, signOut } = useAuth();
 
-  // Carrega a imagem salva ao abrir o app
+  // Nome vindo do backend
+  const username = user?.user?.usuario || "Usuário";
+
   useEffect(() => {
     const loadImage = async () => {
       const savedImage = await AsyncStorage.getItem('profileImage');
@@ -16,7 +20,6 @@ export default function ProfileScreen({ navigation }) {
     loadImage();
   }, []);
 
-  // Escolher imagem
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
@@ -38,44 +41,62 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  // Logout
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('usuario');
-    await AsyncStorage.removeItem('senha');
-    navigation.replace('Login');
+    await signOut(); // usa Auth.js corretamente
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.profileContainer}>
-        <TouchableOpacity onPress={pickImage}>
-          {image ? (
-            <Image source={{ uri: image }} style={styles.profileImage} />
-          ) : (
-            <View style={styles.placeholder}>
-              <Ionicons name="person-circle-outline" size={100} color="#aaa" />
-            </View>
-          )}
-        </TouchableOpacity>
+      
+      {/* Foto */}
+      <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.profileImage} />
+        ) : (
+          <Ionicons name="person-circle-outline" size={120} color="#aaa" />
+        )}
+      </TouchableOpacity>
 
-        <Text style={styles.username}>Usuário</Text>
-      </View>
+      {/* Nome do usuário */}
+      <Text style={styles.username}>{username}</Text>
 
-      {/* Botão de Sair */}
+      {/* Botão de Logout */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={20} color="#fff" />
+        <Ionicons name="log-out-outline" size={22} color="#fff" />
         <Text style={styles.logoutText}>Sair</Text>
       </TouchableOpacity>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  profileContainer: { alignItems: 'center', marginBottom: 40 },
-  profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 2, borderColor: '#0b2a47' },
-  placeholder: { width: 120, height: 120, alignItems: 'center', justifyContent: 'center' },
-  username: { marginTop: 10, fontSize: 18, fontWeight: 'bold', color: '#0b2a47' },
+  container: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: '#fff' 
+  },
+
+  imageContainer: {
+    marginBottom: 15,
+  },
+
+  profileImage: { 
+    width: 130, 
+    height: 130, 
+    borderRadius: 70, 
+    borderWidth: 3, 
+    borderColor: '#0b2a47' 
+  },
+
+  username: { 
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    color: '#0b2a47',
+    marginBottom: 35 
+  },
+
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -84,5 +105,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 30,
   },
-  logoutText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+
+  logoutText: { 
+    color: '#fff', 
+    fontSize: 18, 
+    fontWeight: 'bold',
+    marginLeft: 8 
+  },
 });
