@@ -1,30 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import axios from "axios";
+import { useAuth } from "../hooks/Auth";
+// import axios from "axios";
 
 export default function Home({ token }) {
   const [umidade, setUmidade] = useState(0);
   const [bombaLigada, setBombaLigada] = useState(false);
   const [statusTexto, setStatusTexto] = useState("");
+  const {user} = useAuth()
 
-  const api = axios.create({
-    baseURL: "http://SEU_BACKEND_AQUI", // substitua pelo seu backend
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
+  const baseURL = "https://backend-irrigacao-grazi.onrender.com/api"; //, // substitua pelo seu backend
+  const headers = {
+    Authorization: `${user.user.token}`,
+    "Content-Type": "application/json"
+  };
   // Buscar umidade e estado da bomba a cada 3 segundos
   useEffect(() => {
     const interval = setInterval(async () => {
       await fetchUmidade();
-      await fetchStatusBomba();
+      // await fetchStatusBomba();
     }, 3000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchUmidade = async () => {
     try {
-      const res = await api.get("/umidade/ultima");
-      setUmidade(res.data.valor);
+      const page = await fetch(`${baseURL}/umidade/ultima`, {
+        method: "GET",
+        headers: headers
+      });
+      console.log(`${baseURL}/umidade/ultima`)
+      console.log(`Status: ${page.status}`);
+      const json = await page.json();
+      console.log(json);
+      console.log(user.user.token);
+      // setUmidade(res.data.valor);
     } catch (err) {
       console.error("Erro ao buscar umidade:", err);
     }

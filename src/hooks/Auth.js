@@ -1,15 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
-// import { useUsersDatabase } from "../../database/useUsersDatabase";
 
 const AuthContext = createContext();
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-const BACKEND_URL =
-  "https://lonely-cobweb-4jq7r5797wwrcq5wr-3000.app.github.dev/api";
-
+const BACKEND_URL = "https://backend-irrigacao-grazi.onrender.com/api"; 
+// ------------------------
+// AGORA ESTÁ CORRETO!!!
+// ------------------------
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState({
@@ -17,44 +15,39 @@ export function AuthProvider({ children }) {
     user: null,
     role: null,
   });
-  //   const { authUser } = useUsersDatabase();
 
+  // ------------------------
+  // FUNÇÃO QUE FAZ LOGIN NO BACKEND
+  // ------------------------
   const authUser = async (email, password) => {
-    // console.log("Fetch:", email, password);
     try {
       const res = await fetch(`${BACKEND_URL}/signin`, {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          // 'User-Agent' só se precisar — no React Native geralmente não é necessário
         },
-       body: JSON.stringify({ usuario: email, senha: password })
+        body: JSON.stringify({ usuario: email, senha: password }),
       });
 
-      //   console.log("Response status:", res.status, " ", res.ok);
-
       if (!res.ok) {
-        // backend devolveu erro (401, 400, 500, ...)
-        const msg = res?.body?.message || "Erro desconhecido do servidor.";
-        return { ok: false, status: res.status, error: msg, data: res.body };
+        const err = await res.json();
+        return { ok: false, status: res.status, error: err.message };
       }
 
       const resBody = await res.json();
-
       return { ok: true, status: res.status, data: resBody };
+
     } catch (err) {
-      console.log("Fetch error:", err);
-      if (err.name === "AbortError") {
-        return { ok: false, status: 0, error: "Requisição expirou (timeout)." };
-      }
-      return { ok: false, status: 0, error: err.message || "Erro de rede." };
+      return { ok: false, status: 0, error: err.message };
     }
   };
 
+  // Carrega usuário salvo
   useEffect(() => {
     const getUserStoraged = async () => {
       const userLogged = await AsyncStorage.getItem("@user:irrigacao");
+
       if (userLogged) {
         setUser({
           autenticated: true,
@@ -72,33 +65,37 @@ export function AuthProvider({ children }) {
     getUserStoraged();
   }, []);
 
+  // ------------------------
+  // LOGIN
+  // ------------------------
   const signIn = async ({ email, password }) => {
-    // console.log("Tentando logar com:", email, password);
     const userExists = await authUser(email, password);
-    // console.log("authUser returned:", userExists?.data?.token);
 
-    const token = userExists?.data?.token || null;
-
-    if (token === null) {
-      console.log("Token inválido");
-      setUser({
-        autenticated: false,
-        user: null,
-        role: null,
-      });
+    if (!userExists.ok || !userExists.data?.token) {
       await AsyncStorage.removeItem("@user:irrigacao");
       throw new Error("Usuário ou senha inválidos");
     }
-    await AsyncStorage.setItem("@user:irrigacao", JSON.stringify(userExists.data));
+
+    await AsyncStorage.setItem(
+      "@user:irrigacao",
+      JSON.stringify(userExists.data)
+    );
+
     setUser({
       autenticated: true,
       user: userExists.data,
-      role: userExists.role,
+      role: userExists.data.role,
     });
+
+    // console.log(`Dados do usuario: ${userExists.data.user.token}`)
+    // console.log(userExists.data.token)
 
     return userExists.data;
   };
 
+  // ------------------------
+  // LOGOUT
+  // ------------------------
   const signOut = async () => {
     await AsyncStorage.removeItem("@user:irrigacao");
     setUser({
@@ -111,7 +108,7 @@ export function AuthProvider({ children }) {
   if (user === null) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>Carregando usuários</Text>
+        <Text>Carregando...</Text>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
@@ -129,6 +126,5 @@ export function useAuth() {
   if (!context) {
     throw new Error("useAuth must be used within a AuthProvider");
   }
-
   return context;
 }
