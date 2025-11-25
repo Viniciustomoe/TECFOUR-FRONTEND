@@ -11,7 +11,6 @@ export default function Home() {
 
   const baseURL = "https://backend-irrigacao-grazi.onrender.com/api";
 
-  // Só manda authorization se tiver token
   const headers = token
     ? {
         Authorization: `Bearer ${token}`,
@@ -24,46 +23,43 @@ export default function Home() {
   useEffect(() => {
     if (!token) return;
 
-    // Atualiza a cada 3 segundos
     const interval = setInterval(() => {
-      fetchUmidade();
+      fetchStatus();
     }, 3000);
 
-    fetchUmidade(); // primeira chamada imediata
+    fetchStatus(); // primeira chamada
 
     return () => clearInterval(interval);
   }, [token]);
 
-  const fetchUmidade = async () => {
+
+  // 🔥 BUSCA CORRETA DO BACKEND /status
+  const fetchStatus = async () => {
     try {
-      const page = await fetch(`${baseURL}/umidade/ultima`, {
+      const response = await fetch(`${baseURL}/status`, {
         method: "GET",
         headers,
       });
 
-      const json = await page.json();
-      console.log("UMIDADE RECEBIDA:", json);
+      const json = await response.json();
+      console.log("STATUS RECEBIDO:", json);
 
-      // Se o backend estiver assim: { valor: 55, createdAt: ... }
-      if (json?.valor !== undefined) {
-        setUmidade(json.valor);
-      }
+      // Backend retorna:
+      // { ligada: false, texto: "🌤️ Desligada", horario: "2025-11-25 ..." }
 
-      // Se quiser mostrar status da bomba automaticamente:
-      if (json?.valor <= 30) {
-        setStatusTexto("Solo seco — bomba ligada");
-      } else {
-        setStatusTexto("Solo adequado — bomba desligada");
-      }
+      setStatusTexto(json.texto);
+
+      // Só para exibir no círculo: bomba = 100% ligada, 0% desligada
+      setUmidade(json.ligada ? 100 : 0);
 
     } catch (err) {
-      console.error("Erro ao buscar umidade:", err);
+      console.error("Erro ao buscar status:", err);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Umidade do Solo</Text>
+      <Text style={styles.titulo}>Status da Irrigação</Text>
 
       <View style={styles.umidadeContainer}>
         <Text style={styles.umidadeTexto}>{umidade}%</Text>
