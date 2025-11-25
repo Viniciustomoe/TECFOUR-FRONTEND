@@ -1,72 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Switch, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Config() {
-  const [umidadeMinima, setUmidadeMinima] = useState("");
-  const [umidadeMaxima, setUmidadeMaxima] = useState("");
+  const [temaEscuro, setTemaEscuro] = useState(false);
 
   useEffect(() => {
-    buscarConfiguracoes();
+    carregarTema();
   }, []);
 
-  async function buscarConfiguracoes() {
-    try {
-      const res = await fetch("https://lonely-cobweb-4jq7r5797wwrcq5wr-3000.app.github.dev/config");
-      const data = await res.json();
-
-      setUmidadeMinima(data.umidadeMinima.toString());
-      setUmidadeMaxima(data.umidadeMaxima.toString());
-
-    } catch (e) {
-      console.log("Erro ao carregar config:", e);
+  async function carregarTema() {
+    const tema = await AsyncStorage.getItem("temaEscuro");
+    if (tema !== null) {
+      setTemaEscuro(JSON.parse(tema));
     }
   }
 
-  async function salvar() {
-    try {
-      await fetch("https://lonely-cobweb-4jq7r5797wwrcq5wr-3000.app.github.dev/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          umidadeMinima: Number(umidadeMinima),
-          umidadeMaxima: Number(umidadeMaxima)
-        })
-      });
-
-      alert("Configurações salvas com sucesso!");
-    } catch (e) {
-      console.log("Erro ao salvar config:", e);
-    }
+  async function mudarTema(valor) {
+    setTemaEscuro(valor);
+    await AsyncStorage.setItem("temaEscuro", JSON.stringify(valor));
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Configurações do Sistema</Text>
+      <Text style={styles.title}>Configurações</Text>
 
       <View style={styles.card}>
-        
-        <Text style={styles.label}>Umidade mínima (%)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={umidadeMinima}
-          onChangeText={setUmidadeMinima}
-        />
-
-        <Text style={styles.label}>Umidade máxima (%)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={umidadeMaxima}
-          onChangeText={setUmidadeMaxima}
-        />
-
-        <TouchableOpacity style={styles.saveBtn} onPress={salvar}>
-          <Text style={styles.saveText}>Salvar Configurações</Text>
-        </TouchableOpacity>
-
+        <Text style={styles.label}>Modo Escuro</Text>
+        <Switch value={temaEscuro} onValueChange={mudarTema} />
       </View>
-
     </View>
   );
 }
@@ -80,22 +42,4 @@ const styles = StyleSheet.create({
     borderRadius: 15
   },
   label: { fontSize: 18, marginBottom: 10 },
-  input: {
-    backgroundColor: '#ecf0f1',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 18,
-    marginBottom: 20
-  },
-  saveBtn: {
-    backgroundColor: '#2980b9',
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center'
-  },
-  saveText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold'
-  }
 });

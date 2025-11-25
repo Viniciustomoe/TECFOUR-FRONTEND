@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import InputField from "../components/InputField";
 import ButtonPrimary from "../components/ButtonPrimary";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../hooks/Auth";
 
 export default function LoginScreen({ navigation }) {
@@ -14,15 +13,14 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     try {
-      const result = await signIn({email: usuario, password: senha});
-      // console.log("Login bem-sucedido:", result);
-      if (result?.token) {
-         navigation.replace('Main');
-      }
+      const result = await signIn({ usuario, senha });  // <-- CORRIGIDO
 
+      if (result?.token) {
+        navigation.replace("Main");
+      }
     } catch (error) {
       console.log("Erro: ", error.message);
-      Alert.alert(error.message);
+      Alert.alert("Erro", error.message);
     }
   };
 
@@ -37,18 +35,22 @@ export default function LoginScreen({ navigation }) {
 
       <View style={styles.form}>
         <Text style={styles.title}>Login</Text>
+
         <InputField
           placeholder="Usuário"
           value={usuario}
           onChangeText={setUsuario}
         />
+
         <InputField
           placeholder="Senha"
           secure={true}
           value={senha}
           onChangeText={setSenha}
         />
+
         <ButtonPrimary title="ENTRAR" onPress={handleLogin} />
+
         <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
           <Text style={styles.footerText}>
             Não tem cadastro?{" "}

@@ -4,26 +4,30 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function NotificationScreen() {
   const [items, setItems] = useState([]);
-
-  const BASE = "https://lonely-cobweb-4jq7r5797wwrcq5wr-3000.app.github.dev/api";
+  const BASE = "https://backend-irrigacao-grazi.onrender.com/api";
 
   const loadNotifications = async () => {
     try {
       const user = await AsyncStorage.getItem("@user:irrigacao");
       const token = JSON.parse(user)?.token;
 
-      const res = await fetch(`${BASE}/notificacoes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // 🔥 CORREÇÃO: só envia Authorization se houver token
+      const headers = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
 
+      const res = await fetch(`${BASE}/notificacoes`, { headers });
       const data = await res.json();
+
       setItems(data || []);
     } catch (e) {
       console.log("Erro:", e);
     }
   };
 
-  useEffect(() => { loadNotifications(); }, []);
+  useEffect(() => {
+    loadNotifications();
+  }, []);
 
   return (
     <View style={styles.container}>

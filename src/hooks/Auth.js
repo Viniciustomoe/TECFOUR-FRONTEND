@@ -4,22 +4,13 @@ import { ActivityIndicator, Text, View } from "react-native";
 
 const AuthContext = createContext();
 
-const BACKEND_URL = "https://backend-irrigacao-grazi.onrender.com/api"; 
-// ------------------------
-// AGORA ESTÁ CORRETO!!!
-// ------------------------
+const BACKEND_URL = "https://backend-irrigacao-grazi.onrender.com/api";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState({
-    autenticated: false,
-    user: null,
-    role: null,
-  });
+  const [user, setUser] = useState(null);
 
-  // ------------------------
-  // FUNÇÃO QUE FAZ LOGIN NO BACKEND
-  // ------------------------
-  const authUser = async (email, password) => {
+  // ------- LOGIN NO BACKEND -------
+  const authUser = async (usuario, senha) => {
     try {
       const res = await fetch(`${BACKEND_URL}/signin`, {
         method: "POST",
@@ -27,7 +18,7 @@ export function AuthProvider({ children }) {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ usuario: email, senha: password }),
+        body: JSON.stringify({ usuario, senha }), // <-- CORRETO
       });
 
       if (!res.ok) {
@@ -37,22 +28,21 @@ export function AuthProvider({ children }) {
 
       const resBody = await res.json();
       return { ok: true, status: res.status, data: resBody };
-
     } catch (err) {
       return { ok: false, status: 0, error: err.message };
     }
   };
 
-  // Carrega usuário salvo
+  // ------- CARREGA USUÁRIO SALVO -------
   useEffect(() => {
-    const getUserStoraged = async () => {
-      const userLogged = await AsyncStorage.getItem("@user:irrigacao");
-
-      if (userLogged) {
+    const loadUser = async () => {
+      const stored = await AsyncStorage.getItem("@user:irrigacao");
+      if (stored) {
+        const parsed = JSON.parse(stored);
         setUser({
           autenticated: true,
-          user: JSON.parse(userLogged),
-          role: JSON.parse(userLogged).role,
+          user: parsed,
+          role: parsed.role,
         });
       } else {
         setUser({
@@ -62,14 +52,12 @@ export function AuthProvider({ children }) {
         });
       }
     };
-    getUserStoraged();
+    loadUser();
   }, []);
 
-  // ------------------------
-  // LOGIN
-  // ------------------------
-  const signIn = async ({ email, password }) => {
-    const userExists = await authUser(email, password);
+  // ------- LOGIN -------
+  const signIn = async ({ usuario, senha }) => {
+    const userExists = await authUser(usuario, senha);
 
     if (!userExists.ok || !userExists.data?.token) {
       await AsyncStorage.removeItem("@user:irrigacao");
@@ -87,15 +75,10 @@ export function AuthProvider({ children }) {
       role: userExists.data.role,
     });
 
-    // console.log(`Dados do usuario: ${userExists.data.user.token}`)
-    // console.log(userExists.data.token)
-
     return userExists.data;
   };
 
-  // ------------------------
-  // LOGOUT
-  // ------------------------
+  // ------- LOGOUT -------
   const signOut = async () => {
     await AsyncStorage.removeItem("@user:irrigacao");
     setUser({
@@ -124,7 +107,7 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within a AuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

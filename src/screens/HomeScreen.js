@@ -1,95 +1,75 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useAuth } from "../hooks/Auth";
-// import axios from "axios";
 
-export default function Home({ token }) {
+export default function Home() {
   const [umidade, setUmidade] = useState(0);
-  const [bombaLigada, setBombaLigada] = useState(false);
   const [statusTexto, setStatusTexto] = useState("");
-  const {user} = useAuth()
 
-  const baseURL = "https://backend-irrigacao-grazi.onrender.com/api"; //, // substitua pelo seu backend
-  const headers = {
-    Authorization: `${user.user.token}`,
-    "Content-Type": "application/json"
-  };
-  // Buscar umidade e estado da bomba a cada 3 segundos
+  const { user } = useAuth();
+  const token = user?.user?.token;
+
+  const baseURL = "https://backend-irrigacao-grazi.onrender.com/api";
+
+  // Só manda authorization se tiver token
+  const headers = token
+    ? {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      }
+    : {
+        "Content-Type": "application/json",
+      };
+
   useEffect(() => {
-    const interval = setInterval(async () => {
-      await fetchUmidade();
-      // await fetchStatusBomba();
+    if (!token) return;
+
+    // Atualiza a cada 3 segundos
+    const interval = setInterval(() => {
+      fetchUmidade();
     }, 3000);
+
+    fetchUmidade(); // primeira chamada imediata
+
     return () => clearInterval(interval);
-  }, []);
+  }, [token]);
 
   const fetchUmidade = async () => {
     try {
       const page = await fetch(`${baseURL}/umidade/ultima`, {
         method: "GET",
-        headers: headers
+        headers,
       });
-      console.log(`${baseURL}/umidade/ultima`)
-      console.log(`Status: ${page.status}`);
+
       const json = await page.json();
-      console.log(json);
-      console.log(user.user.token);
-      // setUmidade(res.data.valor);
+      console.log("UMIDADE RECEBIDA:", json);
+
+      // Se o backend estiver assim: { valor: 55, createdAt: ... }
+      if (json?.valor !== undefined) {
+        setUmidade(json.valor);
+      }
+
+      // Se quiser mostrar status da bomba automaticamente:
+      if (json?.valor <= 30) {
+        setStatusTexto("Solo seco — bomba ligada");
+      } else {
+        setStatusTexto("Solo adequado — bomba desligada");
+      }
+
     } catch (err) {
       console.error("Erro ao buscar umidade:", err);
-    }
-  };
-
-  const fetchStatusBomba = async () => {
-    try {
-      const res = await api.get("/agua");
-      setBombaLigada(res.data.ligada === 1);
-      setStatusTexto(res.data.statusTexto);
-    } catch (err) {
-      console.error("Erro ao buscar status da bomba:", err);
-    }
-  };
-
-  const ligarBomba = async () => {
-    try {
-      await api.post("/agua/ligar");
-      setBombaLigada(true);
-      setStatusTexto("🚿 Ligada (manual)");
-    } catch (err) {
-      Alert.alert("Erro", "Não foi possível ligar a bomba.");
-      console.error(err);
-    }
-  };
-
-  const desligarBomba = async () => {
-    try {
-      await api.post("/agua/desligar");
-      setBombaLigada(false);
-      setStatusTexto("🌤️ Desligada (manual)");
-    } catch (err) {
-      Alert.alert("Erro", "Não foi possível desligar a bomba.");
-      console.error(err);
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Umidade do Solo</Text>
+
       <View style={styles.umidadeContainer}>
         <Text style={styles.umidadeTexto}>{umidade}%</Text>
       </View>
 
       <Text style={styles.statusBomba}>{statusTexto}</Text>
-
-      <View style={styles.botoesContainer}>
-        <TouchableOpacity style={styles.botaoLigar} onPress={ligarBomba}>
-          <Text style={styles.textoBotao}>Ligar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.botaoDesligar} onPress={desligarBomba}>
-          <Text style={styles.textoBotao}>Desligar</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -130,32 +110,6 @@ const styles = StyleSheet.create({
   statusBomba: {
     fontSize: 20,
     color: "#34495e",
-    marginBottom: 30,
-  },
-  botoesContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "80%",
-  },
-  botaoLigar: {
-    flex: 1,
-    backgroundColor: "#27ae60",
-    padding: 15,
-    borderRadius: 10,
-    marginRight: 10,
-    alignItems: "center",
-  },
-  botaoDesligar: {
-    flex: 1,
-    backgroundColor: "#c0392b",
-    padding: 15,
-    borderRadius: 10,
-    marginLeft: 10,
-    alignItems: "center",
-  },
-  textoBotao: {
-    color: "#ecf0f1",
-    fontSize: 18,
-    fontWeight: "bold",
+    marginTop: 20,
   },
 });
